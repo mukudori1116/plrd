@@ -1,21 +1,21 @@
-from src.read_save import insert_data_db
+from plrd import insert_data_db, create_databese
 import re
 import pathlib
 
 
-def main(path):
-    chdir = pathlib.Path(path)
-    logger = chdir.joinpath("history.log").open('a')
-    reader = chdir.joinpath("history.log").open('r')
+def main(work_space, raw_data_dir, db_path):
+    chdir = pathlib.Path(work_space)
+    logger = chdir.joinpath("db_setting/history.log").open('a')
+    reader = chdir.joinpath("db_setting/history.log").open('r')
     history = reader.read()
-    p = chdir.joinpath("raw_data/")
+    p = chdir.joinpath(raw_data_dir)
     ifile = p.iterdir()
     for f in ifile:
         if str(f.name) not in str(history):
             date = re.search(r"\d{6,8}", str(f)).group(0)
             if len(date) == 6:
                 date = "20" + date
-            insert_data_db(f, date)
+            insert_data_db(f, date, db_path)
             logger.write(str(f.name) + '\n')
         else:
             pass
@@ -24,4 +24,5 @@ def main(path):
 
 
 if __name__ == '__main__':
-    main('D:\\User\\GoogleDrive\\Documents\\10_Research\\01_Data')
+    create_databese('test.db')
+    main('D:/workspace/python/plrd/', "test_data/", 'test.db')
