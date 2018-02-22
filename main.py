@@ -5,8 +5,8 @@ import pathlib
 
 def main(work_space, raw_data_dir, db_path):
     chdir = pathlib.Path(work_space)
-    logger = chdir.joinpath("db_setting/history.log").open('a')
-    reader = chdir.joinpath("db_setting/history.log").open('r')
+    logger = chdir.joinpath("conf/history.log").open('a')
+    reader = chdir.joinpath("conf/history.log").open('r')
     history = reader.read()
     p = chdir.joinpath(raw_data_dir)
     ifile = p.iterdir()

@@ -1,11 +1,11 @@
 import datetime
 import re
-import sqlite3
 import pathlib
 import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from db_setting.database_setup import Base, MTSData
+from conf.database_setup import MTSData
+from conf.setting import ENGINE, Session, Base
 
 
 class Plate:
@@ -27,29 +27,22 @@ class Connect:
         self.path = db_file_path
 
     def ExpList(self):
-        with sqlite3.connect(self.path) as con:
-            sql = "select distinct date from mts"
-            date = con.execute(sql)
-            return [d[0] for d in date]
+        date_list = Session().query(MTSData.date).distinct().all()
+        return date_list
 
     def PlateList(self, date):
-        with sqlite3.connect(self.path) as con:
-            sql = "select distinct cell, plate from mts where date=?"
-            date = con.execute(sql, [date])
-            return [(d[0], d[1]) for d in date]
+        data = Session().query(MTSData.cell, MTSData.plate).distinct().filter(
+            MTSData.date == date).all()
+        return data
 
     def Plate(self, date, cell, plate):
-        with sqlite3.connect(self.path) as con:
-            sql = """
-                select well_id, well
-                from mts
-                where date = ? and cell = ? and plate = ?
-                """
-            data = con.execute(sql, [date, cell, plate])
-            lis = [(d[0], d[1]) for d in data]
-            lis = sorted(lis, key=lambda x: x[0])
-            arr = np.array([d[1] for d in lis]).reshape((8, 12))
-            return Plate(date, cell, plate, arr)
+        lis = Session().query(MTSData.well_id, MTSData.well).filter(
+            MTSData.date == "20180202",
+            MTSData.cell == "A549",
+            MTSData.plate == "blank1").all()
+        lis = sorted(lis, key=lambda x: x[0])
+        arr = np.array([d[1] for d in lis]).reshape((8, 12))
+        return Plate(date, cell, plate, arr)
 
     def Experiment(self, date):
         lis = self.PlateList(date)
@@ -64,10 +57,7 @@ def create_databese(db_path):
 
 def insert_data_db(text_file_path, exp_date, db_path):
     # DB connection
-    engine = create_engine('sqlite:///{}'.format(db_path))
-    Base.metadata.bind = engine
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    Base.metadata.bind = ENGINE
 
     # Read raw data as string
     file_path = text_file_path
@@ -93,9 +83,9 @@ def insert_data_db(text_file_path, exp_date, db_path):
                     well_id=i+1,
                     well=data
                 )
-                session.add(new_data)
+                Session().add(new_data)
 
-    session.commit()
+    Session().commit()
     file_dir = pathlib.Path(text_file_path)
     print("{} was saved.".format(file_dir.name))
     return
@@ -104,4 +94,4 @@ def insert_data_db(text_file_path, exp_date, db_path):
 if __name__ == '__main__':
     con = Connect("test.db")
     exp = con.Experiment("20180202")
-    print(exp)
+    print(exp[0])
