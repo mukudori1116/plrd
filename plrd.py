@@ -3,23 +3,33 @@ import re
 import pathlib
 import numpy as np
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from conf.database_setup import MTSData
 from conf.setting import ENGINE, Session, Base
 
 
 class Plate:
-    def __init__(self, date, cell, plate, data_arr):
+    """Data of each plate."""
+
+    def __init__(self, date, cell, plate_name, data_arr):
         dt = datetime.datetime.strptime(date, '%Y%m%d')
         self.date = datetime.date(dt.year, dt.month, dt.day)
         self.cell = cell
-        self.plate = plate
-        self.arr = data_arr
+        self.name = plate_name
+        self.data = data_arr
 
-    def __str__(self):
-        res = "{}  cell: {}  plate: {}\n{}".format(
-            self.date, self.cell, self.plate, self.arr)
+    def __repr__(self):
+        res = "{}  cell: {}  plate: {}".format(
+            self.date, self.cell, self.name)
         return res
+
+
+class Experiment:
+    def __init__(self, blank_plates_list, data_plate_lists):
+        self.bplates = blank_plates_list
+        self.dplates = data_plate_lists
+        # self.plate_count = len(Plate_list)
+        # self.plate_names = [plate.name for plate in Plate_list]
+        # self.cells = list(set([plate.cell for plate in Plate_list]))
 
 
 class Connect:
@@ -27,26 +37,45 @@ class Connect:
         self.path = db_file_path
 
     def ExpList(self):
+        """Return list of Date."""
         date_list = Session().query(MTSData.date).distinct().all()
         return date_list
 
     def PlateList(self, date):
+        """Return list of cell and plate name of the date."""
         data = Session().query(MTSData.cell, MTSData.plate).distinct().filter(
             MTSData.date == date).all()
-        return data
+        return data         # => [(cell, plate_name),]
 
     def Plate(self, date, cell, plate):
+        """Make Plate object from date, cell and plate."""
         lis = Session().query(MTSData.well_id, MTSData.well).filter(
-            MTSData.date == "20180202",
-            MTSData.cell == "A549",
-            MTSData.plate == "blank1").all()
+            MTSData.date == date,
+            MTSData.cell == cell,
+            MTSData.plate == plate).all()
         lis = sorted(lis, key=lambda x: x[0])
         arr = np.array([d[1] for d in lis]).reshape((8, 12))
         return Plate(date, cell, plate, arr)
 
-    def Experiment(self, date):
-        lis = self.PlateList(date)
-        return [self.Plate(date, d[0], d[1]) for d in lis]
+    def makeExp(self, date):
+        """Make Experiment object from date."""
+        # Names of plate on date
+        plate_name_list = self.PlateList(date)
+        # Make Plate object from plate_name_list
+        plate_list = [self.Plate(date, pl[0], pl[1]) for pl in plate_name_list]
+        # Extract blank plate names
+        blank_plate_names = [name[1] for name in plate_name_list if re.match(
+            r"blank\s?\d?(\(\w+\))?", name[1])]
+        # Extract data plate names
+        data_plate_names = [name[1] for name in plate_name_list if not re.match(
+            r"blank\s?\d?(\(\w+\))?", name[1])]
+        # Make list of blank plate from blank_plate_names
+        blank_plates_list = [
+            plate for plate in plate_list if plate.name in blank_plate_names]
+        # Make list of data plate from data_plate_names
+        data_plates_list = [
+            plate for plate in plate_list if plate.name in data_plate_names]
+        return Experiment(blank_plates_list, data_plates_list)
 
 
 def create_databese(db_path):
@@ -93,5 +122,5 @@ def insert_data_db(text_file_path, exp_date, db_path):
 
 if __name__ == '__main__':
     con = Connect("test.db")
-    exp = con.Experiment("20180202")
-    print(exp[0])
+    exp = con.makeExp("20180202")
+    print(exp.bplates)

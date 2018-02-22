@@ -1,9 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float
-from sqlalchemy.ext.declarative import declarative_base
 from conf.setting import Base
 
-
-Base = declarative_base()
 
 class MTSData(Base):
     __tablename__ = 'mts'
