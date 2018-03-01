@@ -11,3 +11,11 @@ class MTSData(Base):
     plate = Column(String)
     well_id = Column(Integer, nullable=False)
     well = Column(Float)
+
+
+class History(Base):
+    __tablename__ = 'history'
+
+    id = Column(Integer, primary_key=True)
+    date = Column(String, nullable=False)
+    file_name = Column(String)
