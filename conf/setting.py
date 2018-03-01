@@ -7,7 +7,7 @@ DATABASE = 'sqlite:///test.db'
 ENGINE = create_engine(
     DATABASE,
     encoding="utf-8",
-    echo=True  # Trueだと実行のたびにSQLが出力される
+    echo=False  # Trueだと実行のたびにSQLが出力される
 )
 
 # Sessionの作成

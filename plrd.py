@@ -32,7 +32,9 @@ class Experiment:
         alist = []
         for i, (bplate, dplate) in enumerate(zip(self.bplates, self.dplates)):
             alist.append(Analyzer(bplate.date, i, bplate.cell, bplate, dplate))
-        idlist = ", ".join([analyzer.__repr__() for analyzer in alist])
+        idlist = [
+            (analyzer.id, analyzer.cell, analyzer.date) for analyzer in alist
+        ]
         return AnalyzerList(idlist, alist)
 
 
@@ -51,12 +53,16 @@ class Analyzer:
 
 
 class AnalyzerList:
-    def __init__(self, id_string, analyzer_list):
-        self.ids = id_string
+    def __init__(self, id_list, analyzer_list):
+        self.ids = id_list
         self.analyzer_list = analyzer_list
 
     def show(self):
         print(self.analyzer_list)
+        return
+
+    def listed(self):
+        self.idstring
         return
 
     def analyze(self, id_value):
@@ -81,7 +87,7 @@ class Connect:
     def ExpList(self):
         """Return list of Date."""
         date_list = Session().query(MTSData.date).distinct().all()
-        return date_list
+        return [date[0] for date in date_list]
 
     def PlateList(self, date):
         """Return list of cell and plate name of the date."""
@@ -166,6 +172,4 @@ def insert_data_db(text_file_path, exp_date, db_path):
 
 if __name__ == '__main__':
     con = Connect("test.db")
-    exp = con.makeExp("20180202")
-    alist = exp.make_alist()
-    alist.show()
+    con.makeExp()

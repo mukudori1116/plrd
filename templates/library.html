@@ -1,0 +1,20 @@
+{% extends "extends.html" %} 
+{% block body %}
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for date in idate_list %}
+        <tr>
+            <th scope="row">{{date[0]}}</th>
+            <td><a href="/analyzer/{{date[1]}}">{{date[2]}}</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
